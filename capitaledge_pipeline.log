@@ -1,0 +1,15 @@
+2026-06-15 22:47:40,823  INFO  Pipeline started.
+2026-06-15 23:14:52,690  INFO  Pipeline started.
+2026-06-15 23:14:53,227  INFO  Extracted data for IBM: 100 rows
+2026-06-15 23:14:53,637  ERROR  API response error for TSCO.LON: {'Information': 'Thank you for using Alpha Vantage! Please consider spreading out your free API requests more sparingly (1 request per second). You may subscribe to any of the premium plans at https://www.alphavantage.co/premium/ to lift the free key rate limit (25 requests per day), raise the per-second burst limit, and instantly unlock all premium endpoints'}
+2026-06-15 23:14:54,061  ERROR  API response error for SHOP.TRT: {'Information': 'Thank you for using Alpha Vantage! Please consider spreading out your free API requests more sparingly (1 request per second). You may subscribe to any of the premium plans at https://www.alphavantage.co/premium/ to lift the free key rate limit (25 requests per day), raise the per-second burst limit, and instantly unlock all premium endpoints'}
+2026-06-15 23:14:54,551  INFO  Extracted data for GPV.TRV: 100 rows
+2026-06-15 23:14:54,551  INFO  Total records extracted: 200 rows
+2026-06-15 23:31:00,660  INFO  Pipeline started.
+2026-06-15 23:31:13,214  INFO  Extracted data for IBM: 100 rows
+2026-06-15 23:31:25,673  INFO  Extracted data for TSCO.LON: 100 rows
+2026-06-15 23:31:38,213  INFO  Extracted data for SHOP.TRT: 100 rows
+2026-06-15 23:31:50,675  INFO  Extracted data for GPV.TRV: 100 rows
+2026-06-15 23:31:50,675  INFO  Total records extracted: 400 rows
+2026-06-15 23:31:50,702  INFO  Transformation completed. Rows in transformed dataframe: 400
+2026-06-15 23:31:51,072  INFO  Data loaded successfully into database: 400 rows

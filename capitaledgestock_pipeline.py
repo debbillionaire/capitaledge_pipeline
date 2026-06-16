@@ -9,8 +9,8 @@ from sqlalchemy import create_engine
 from dotenv import load_dotenv  
 import os
 import logging
+import time
 
-from sqlalchemy.util import symbol
 
 # Set up logging
 # There are 4 main levels: DEBUG, INFO, WARNING, ERROR. Will be using INFO for general messages about the pipeline's progress.
@@ -40,23 +40,47 @@ DB_NAME = os.getenv('DB_NAME')
 symbols = ['IBM', 'TSCO.LON', 'SHOP.TRT', 'GPV.TRV']
 
 def extract(symbols):
+
     all_records = []
 
-
     for symbol in symbols:
+
         url = f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&apikey={API_KEY}"
 
         response = requests.get(url)
-        response.raise_for_status()  # Check if the request was successful
+        response.raise_for_status()
+
         data = response.json()
+        time.sleep(12)  # Sleep for 12 seconds to respect API rate limits (5 calls per minute)
 
-        for record in data["values"]:
-            record["symbol"] = symbol  # Add the symbol to each record
+        if "Time Series (Daily)" not in data:
 
-        all_records.extend(data["values"])
-        logger.info(f"Extracted data for symbol: {symbol}, Records: {len(data['values'])} rows")
+            logger.error(f"API response error for {symbol}: {data}")
 
-    logger.info(f"Total records extracted: {len(all_records)} rows")      #coming out of the loop, we can log the total number of records extracted across all symbols
+            continue
+
+        time_series = data["Time Series (Daily)"]
+
+        for date, values in time_series.items():
+
+            all_records.append({
+                "symbol": symbol,
+                "date": date,
+                "open": values["1. open"],
+                "high": values["2. high"],
+                "low": values["3. low"],
+                "close": values["4. close"],
+                "volume": values["5. volume"]
+            })
+
+        logger.info(
+            f"Extracted data for {symbol}: {len(time_series)} rows"
+        )
+
+    logger.info(
+        f"Total records extracted: {len(all_records)} rows"
+    )
+
     return all_records
 
 
@@ -64,44 +88,58 @@ def extract(symbols):
 
 def transform_data(records):
 
-    # converting the dictionary timeseries data into a dataframe
-    df = pd.DataFrame.from_dict(records, orient='index')
+    df = pd.DataFrame(records)
 
-    # Resetting the index to make the date a column
-    df.reset_index(inplace=True)
-
-    # rename index column to "date"
-    df.rename(columns={'index': 'date'}, inplace=True)
-
-    #convert the date column to datetime format 
+    # Convert date column
     df['date'] = pd.to_datetime(df['date'])
 
-    # Renaming  the columns for simplicity, removing the numbers and dots
-    df.rename(columns={
-        '1. open': 'open',
-        '2. high': 'high',
-        '3. low': 'low',
-        '4. close': 'close',
-        '5. volume': 'volume'
-    }, inplace=True)
-
-
-    # converting the numericcolumns to coreect data types
+    # Convert numeric columns
     df = df.astype({
-        'open': 'float',
-        'high': 'float',
-        'low': 'float',
-        'close': 'float',
-        'volume': 'int'
+        'open': float,
+        'high': float,
+        'low': float,
+        'close': float,
+        'volume': int
     })
 
-    # sort by date (important for time series data)
-    df = df.sort_values('date').reset_index(drop=True)
-
-    # remove duplicates if any
+    # Remove duplicates
     df = df.drop_duplicates()
 
+    # Sort by date
+    df = df.sort_values('date')
+
+    logger.info(
+        f"Transformation completed. Rows in transformed dataframe: {len(df)}"
+    )
+
     return df
+
+
+
+# LOAD FUNCTION
+def load(df):
+    db_url = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+    # creating engine using sqlalchemy
+    engine = create_engine(db_url)
+
+    #load dataframe to sql database
+    df.to_sql('stockprices_data', engine, if_exists='append', index=False)
+    logger.info(f"Data loaded successfully into database: {len(df)} rows")
+
+
+def run_pipeline():
+    logger.info("Pipeline started.")
+    records = extract(symbols)
+    df = transform_data(records)
+    load(df)
+
+if __name__ == "__main__":
+    run_pipeline()
+
+
+
+
 
 
         
